@@ -13,13 +13,14 @@ import { provideEffects } from '@ngrx/effects';
 import { searchReducer } from './store/reducers/search.reducer';
 import { SearchEffects } from './store/effects/search.effects';
 import { polygonReducer } from './store/reducers/polygon.reducer';
+import { AnalyticsEffects } from './store/effects/analytics.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideHttpClient(),
     provideStore({ search: searchReducer, polygons: polygonReducer }),
-    provideEffects([SearchEffects]),
+    provideEffects([SearchEffects, AnalyticsEffects]),
     ɵprovideZonelessChangeDetectionInternal(),
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),

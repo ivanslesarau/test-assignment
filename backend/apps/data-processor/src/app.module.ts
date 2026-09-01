@@ -9,6 +9,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from 'n/shared/database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { HttpModule } from '@nestjs/axios';
       { name: Character.name, schema: CharacterSchema },
     ]),
     HttpModule,
+    AnalyticsModule,
   ],
   controllers: [DataProcessorController],
   providers: [DataProcessorService],
