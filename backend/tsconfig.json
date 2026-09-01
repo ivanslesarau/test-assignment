@@ -21,13 +21,10 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
+    "strictPropertyInitialization": false,
     "paths": {
-      "n/shared": [
-        "libs/shared/src"
-      ],
-      "n/shared/*": [
-        "libs/shared/src/*"
-      ]
+      "n/shared": ["libs/shared/src"],
+      "n/shared/*": ["libs/shared/src/*"]
     }
   }
 }

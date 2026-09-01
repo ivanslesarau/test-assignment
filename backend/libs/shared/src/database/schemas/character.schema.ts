@@ -20,4 +20,5 @@ export class Character {
 
 export const CharacterSchema = SchemaFactory.createForClass(Character);
 
-CharacterSchema.index({ name: 'text', species: 'text' });
+CharacterSchema.index({ name: 1 });
+CharacterSchema.index({ species: 1 });

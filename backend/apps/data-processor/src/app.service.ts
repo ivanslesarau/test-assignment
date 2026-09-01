@@ -126,8 +126,17 @@ export class DataProcessorService {
     limit: number,
   ) {
     const skip = (page - 1) * limit;
+    let filter: any = {};
 
-    const filter = query ? { $text: { $search: query } } : {};
+    if (query && query.trim()) {
+      const cleanQuery = query.trim();
+      filter = {
+        $or: [
+          { name: { $regex: cleanQuery, $options: 'i' } },
+          { species: { $regex: cleanQuery, $options: 'i' } },
+        ],
+      };
+    }
 
     const [items, total] = await Promise.all([
       this.characterModel.find(filter).skip(skip).limit(limit).exec(),
