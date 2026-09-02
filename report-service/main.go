@@ -38,19 +38,36 @@ func (s *server) GeneratePdfReport(ctx context.Context, req *pb.ReportRequest) (
 	for i, metric := range req.Metrics {
 		var xValues []time.Time
 		var yValues []float64
+		var maxVal float64 = 0
 
 		for _, pt := range metric.Points {
 			xValues = append(xValues, time.UnixMilli(pt.Timestamp))
-			yValues = append(yValues, float64(pt.Value))
+			val := float64(pt.Value)
+			yValues = append(yValues, val)
+
+			if val > maxVal {
+				maxVal = val
+			}
+		}
+
+		if maxVal < 5 {
+			maxVal = 5
+		} else {
+			maxVal = maxVal * 1.2
 		}
 
 		graph := chart.Chart{
 			Title: metric.MetricName,
 			XAxis: chart.XAxis{
-				Name: "Time",
+				Name:           "Time",
+				ValueFormatter: chart.TimeValueFormatterWithFormat("15:04"),
 			},
 			YAxis: chart.YAxis{
 				Name: "Quantity",
+				Range: &chart.ContinuousRange{
+					Min: 0,
+					Max: maxVal,
+				},
 			},
 			Series: []chart.Series{
 				chart.TimeSeries{

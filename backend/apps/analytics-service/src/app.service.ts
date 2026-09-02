@@ -9,49 +9,91 @@ import { TrackEventDto } from 'n/shared/dto/analytics.dto';
 import { GetLogsDto } from './dto/get-logs.dto';
 import type { ClientGrpc } from '@nestjs/microservices';
 import {
+  DataPoint,
   ReportGeneratorClient,
   ReportRequest,
   TimeSeriesData,
 } from './grpc/report.interface';
 import { firstValueFrom } from 'rxjs';
+import Redis from 'ioredis';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
   private reportGenerator: ReportGeneratorClient;
+  private redisClient: Redis;
 
   constructor(
     @InjectModel(EventLog.name)
     private readonly eventLogModel: Model<EventLogDocument>,
     @Inject('REPORT_PACKAGE')
     private readonly grpcCient: ClientGrpc,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    const redisHost = this.configService.get<string>('REDIS_HOST', 'localhost');
+    const redisPort = this.configService.get<number>('REDIS_PORT', 6379);
+
+    this.redisClient = new Redis({
+      host: redisHost,
+      port: redisPort,
+    });
+  }
 
   onModuleInit() {
     this.reportGenerator =
       this.grpcCient.getService<ReportGeneratorClient>('ReportGenerator');
   }
 
-  async generatePdfReport(): Promise<Uint8Array> {
-    this.logger.log('Collecting data...');
+  private async fetchTimeSeriesData(key: string): Promise<DataPoint[]> {
+    try {
+      const rawData = (await this.redisClient.call(
+        'TS.RANGE',
+        key,
+        '-',
+        '+',
+        'AGGREGATION',
+        'sum',
+        60000,
+      )) as any[];
 
-    // TODO: request real data from the database or other sources
-    // For now, use mock data for demonstration purposes
-    const mockMetrics: TimeSeriesData[] = [
-      {
-        metricName: 'Search queries',
-        points: [
-          { timestamp: Date.now() - 3600000 * 2, value: 15 },
-          { timestamp: Date.now() - 3600000 * 1, value: 42 },
-          { timestamp: Date.now(), value: 30 },
-        ],
-      },
-    ];
+      return rawData.map((row) => ({
+        timestamp: Number(row[0]),
+        value: Number(row[1]),
+      }));
+    } catch (error) {
+      this.logger.warn(`Failed to fetch data for key ${key} (possibly empty)`);
+      return [];
+    }
+  }
+
+  async generatePdfReport(): Promise<Uint8Array> {
+    this.logger.log('Collecting data from RedisTimeSeries...');
+
+    const searchPoints = await this.fetchTimeSeriesData('timeseries:searches');
+    const polygonPoints = await this.fetchTimeSeriesData('timeseries:polygons');
+
+    const metrics: TimeSeriesData[] = [];
+
+    if (searchPoints.length > 0) {
+      metrics.push({ metricName: 'Searches', points: searchPoints });
+    }
+    if (polygonPoints.length > 0) {
+      metrics.push({ metricName: 'Polygon Creation', points: polygonPoints });
+    }
+    console.log(metrics);
+
+    if (metrics.length === 0) {
+      metrics.push({
+        metricName: 'No Data',
+        points: [{ timestamp: Date.now(), value: 0 }],
+      });
+    }
 
     const request: ReportRequest = {
-      title: 'Analytics ActivityReport',
-      dateRangeLabel: 'For last 24 hours',
-      metrics: mockMetrics,
+      title: 'Analytics Activity Report',
+      dateRangeLabel: 'Based on RedisTimeSeries data',
+      metrics,
     };
 
     try {
@@ -61,10 +103,9 @@ export class AnalyticsService {
       );
 
       if (response.errorMessage) {
-        throw new Error(`Error from Report service: ${response.errorMessage}`);
+        throw new Error(response.errorMessage);
       }
 
-      this.logger.log('Report generated successfully.');
       return response.pdfContent;
     } catch (error) {
       this.logger.error('Failure during report generation', error);
