@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  data-processor:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_NAME: data-processor
+    container_name: data-processor
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/data-processor?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - report-service
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_NAME: analytics-service
+    container_name: analytics-service
+    ports:
+      - "3002:3002"
+    environment:
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/analytics?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REPORT_SERVICE_URL=report-service:50051
+    depends_on:
+      - report-service
+    restart: unless-stopped
+
+  report-service:
+    build:
+      context: ../report-service
+    container_name: report-service
+    ports:
+      - "50051:50051"
+    restart: unless-stopped

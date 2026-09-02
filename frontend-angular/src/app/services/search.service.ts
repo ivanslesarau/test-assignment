@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environments';
 
 export interface SearchResponse {
   items: any[];
@@ -14,7 +15,7 @@ export interface SearchResponse {
   providedIn: 'root',
 })
 export class SearchService {
-  private readonly apiUrl = 'http://localhost:3001/characters/search';
+  private readonly apiUrl = `${environment.apiUrl}/characters/search`;
 
   constructor(private http: HttpClient) {}
 
