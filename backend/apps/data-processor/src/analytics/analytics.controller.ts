@@ -1,8 +1,8 @@
 import { Controller, Post, Body, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
-import { TrackEventDto } from './dto/analytics.dto';
 import { RedisTimeSeriesService } from './redis-time-series.service';
+import { TrackEventDto } from 'n/shared/dto/analytics.dto';
 
 @ApiTags('Analytics')
 @Controller('analytics')
