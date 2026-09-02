@@ -5,12 +5,13 @@ import {
 } from 'n/shared/database/schemas/character.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from 'n/shared/database/database.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RedisTimeSeriesService } from './redis-time-series.service';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -23,14 +24,18 @@ import { RedisTimeSeriesService } from './redis-time-series.service';
       { name: Character.name, schema: CharacterSchema },
     ]),
     HttpModule,
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: 'ANALYTICS_SERVICE_CLIENT',
-        transport: Transport.REDIS,
-        options: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: Number(process.env.REDIS_PORT) || 6379,
-        },
+        imports: [ConfigModule],
+        useFactory: async (configService: ConfigService) => ({
+          transport: Transport.REDIS,
+          options: {
+            host: configService.get<string>('REDIS_HOST', 'localhost'),
+            port: configService.get<number>('REDIS_PORT', 6379),
+          },
+        }),
+        inject: [ConfigService],
       },
     ]),
   ],
