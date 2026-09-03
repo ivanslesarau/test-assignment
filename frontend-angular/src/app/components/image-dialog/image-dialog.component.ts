@@ -130,9 +130,12 @@ export class ImageDialogComponent implements AfterViewInit {
     const relX = (event.clientX - rect.left) / rect.width;
     const relY = (event.clientY - rect.top) / rect.height;
 
-    const clickedPolygon = this.savedPolygons.find((poly) =>
-      this.isPointInPolygon({ x: relX, y: relY }, poly.points),
-    );
+    const clickedPolygon = this.savedPolygons.find((poly) => {
+      const center = this.getCentroid(poly.points);
+      // Трансформируем точку клика с обратным углом поворота
+      const unrotatedClick = this.rotatePoint({ x: relX, y: relY }, center, -poly.rotation);
+      return this.isPointInPolygon(unrotatedClick, poly.points);
+    });
 
     if (event.altKey && clickedPolygon) {
       this.isRotating = true;
@@ -177,6 +180,18 @@ export class ImageDialogComponent implements AfterViewInit {
       this.dragStartPoint = { x: relX, y: relY };
       this.redraw();
     }
+  }
+
+  private rotatePoint(point: Point, center: Point, angle: number): Point {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const dx = point.x - center.x;
+    const dy = point.y - center.y;
+
+    return {
+      x: cos * dx - sin * dy + center.x,
+      y: sin * dx + cos * dy + center.y,
+    };
   }
 
   private isPointInPolygon(point: Point, vs: Point[]): boolean {
