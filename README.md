@@ -252,16 +252,3 @@ manual download step), and the report API is a separate Go service reached over 
   `http://localhost:3001`, hardcoded in `src/environments/environments.ts`.
 - **The UI only consumes data-processor.** `GET /logs` and `GET /report` on port 3002 are documented
   in Swagger and exercised via curl, but no screen calls them yet.
-- **No HTTP interceptor.** The assignment mentions interceptors; the current build uses plain
-  services (`SearchService`, `AnalyticsService`) with none registered in `app.config.ts`.
-- **Compose overrides `MONGO_URI` inline**, pointing the two services at separate databases
-  (`data-processor` and `analytics`) rather than the shared `project-db` from `.env`. The apps
-  compose file sets environment variables directly instead of using `env_file`.
-- **`nest-cli.json` still declares a `backend` project** (`apps/backend`) left over from the Nest
-  scaffold; that directory does not exist. Likewise `libs/shared/shared.service.ts` is an empty
-  placeholder — the real shared code is `database/` and `dto/`.
-- **`depends_on` is incomplete**: the app services depend on `report-service` but not on MongoDB or
-  Redis, so a cold start can race the databases. `restart: unless-stopped` covers it in practice.
-- **Test coverage is essentially absent** — the tooling is configured on both sides, but the only
-  spec file is the generated `frontend-angular/src/app/app.spec.ts`.
-- `backend/characters.jsonl` is a generated ingestion artifact and is gitignored.
