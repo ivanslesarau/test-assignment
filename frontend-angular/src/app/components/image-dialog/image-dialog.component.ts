@@ -37,6 +37,7 @@ export class ImageDialogComponent implements AfterViewInit {
   isDragging = false;
   isRotating = false;
   dragStartPoint: Point = { x: 0, y: 0 };
+  initialMouseAngle = 0;
 
   ngAfterViewInit(): void {
     const canvas = this.canvasRef.nativeElement;
@@ -136,6 +137,9 @@ export class ImageDialogComponent implements AfterViewInit {
     if (event.altKey && clickedPolygon) {
       this.isRotating = true;
       this.selectedPolygon = JSON.parse(JSON.stringify(clickedPolygon));
+
+      const center = this.getCentroid(this.selectedPolygon!.points);
+      this.initialMouseAngle = Math.atan2(relY - center.y, relX - center.x);
     } else if (clickedPolygon) {
       this.isDragging = true;
       this.selectedPolygon = JSON.parse(JSON.stringify(clickedPolygon));
@@ -156,9 +160,10 @@ export class ImageDialogComponent implements AfterViewInit {
 
     if (this.isRotating) {
       const center = this.getCentroid(this.selectedPolygon.points);
-      const angle = Math.atan2(relY - center.y, relX - center.x);
-
-      this.selectedPolygon.rotation = angle;
+      const currentMouseAngle = Math.atan2(relY - center.y, relX - center.x);
+      const deltaAngle = currentMouseAngle - this.initialMouseAngle;
+      this.selectedPolygon.rotation += deltaAngle;
+      this.initialMouseAngle = currentMouseAngle;
       this.redraw();
     } else if (this.isDragging) {
       const dx = relX - this.dragStartPoint.x;
